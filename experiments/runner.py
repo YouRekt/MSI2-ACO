@@ -1,5 +1,6 @@
 from __future__ import annotations
 import csv
+import hashlib
 import itertools
 import json
 import pathlib
@@ -88,12 +89,11 @@ def run_experiment(config_path: str, results_dir: str = "results") -> None:
                         rows.append(rr.to_csv_row())
 
                         # Save per-run JSON
-                        import hashlib, json as _json
-                        param_hash = hashlib.md5(_json.dumps(param_combo, sort_keys=True).encode()).hexdigest()[:8]
+                        param_hash = hashlib.md5(json.dumps(param_combo, sort_keys=True).encode()).hexdigest()[:8]
                         json_name = f"{instance.name}_{algo_name}_{seed}_{param_hash}.json"
                         json_path = results_path / json_name
                         with open(json_path, "w") as f:
-                            _json.dump(rr.to_dict(), f, indent=2)
+                            json.dump(rr.to_dict(), f, indent=2)
 
                         print(f"  {algo_name} | {instance.name} | seed={seed} | "
                               f"s_max={s_max} | dist={solution.total_dist:.1f} | "
