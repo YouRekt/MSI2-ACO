@@ -17,15 +17,15 @@ class MMAS(ACOBase):
         best_ever: Solution | None,
     ) -> None:
         feasible = [s for s in solutions if s.feasible]
-        if not feasible:
-            return
-        iteration_best = min(feasible, key=lambda s: s.total_dist)
-        deposit = 1.0 / iteration_best.total_dist
-        for route in iteration_best.routes:
-            nodes = [0] + route + [0]
-            for i in range(len(nodes) - 1):
-                self.pheromone[nodes[i], nodes[i+1]] += deposit
-                self.pheromone[nodes[i+1], nodes[i]] += deposit
+        if feasible:
+            iteration_best = min(feasible, key=lambda s: s.total_dist)
+            deposit = 1.0 / iteration_best.total_dist
+            for route in iteration_best.routes:
+                nodes = [0] + route + [0]
+                for i in range(len(nodes) - 1):
+                    self.pheromone[nodes[i], nodes[i+1]] += deposit
+                    self.pheromone[nodes[i+1], nodes[i]] += deposit
 
+        # Always clamp — enforces [tau_min, tau_max] even after infeasible iterations
         np.clip(self.pheromone, self.tau_min, self.tau_max, out=self.pheromone)
         np.fill_diagonal(self.pheromone, 0.0)

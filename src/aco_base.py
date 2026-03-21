@@ -55,7 +55,6 @@ class ACOBase:
                         best_ever = sol
 
             self.pheromone *= (1 - self.rho)
-            np.clip(self.pheromone, 0, None, out=self.pheromone)
 
             self._update_pheromones(solutions, best_ever)
 

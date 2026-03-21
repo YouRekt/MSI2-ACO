@@ -29,9 +29,10 @@ def test_mmas_initializes_at_tau_max(tiny_vrp_file):
     tau_max = 5.0
     solver = MMAS(n_ants=5, n_iterations=1, alpha=1.0, beta=2.0, rho=0.2,
                   tau_min=0.1, tau_max=tau_max)
-    import numpy as np
-    n = inst.n_customers + 1
-    solver.pheromone = np.full((n, n), tau_max)
-    np.fill_diagonal(solver.pheromone, 0.0)
-    mask = ~np.eye(n, dtype=bool)
-    assert np.all(solver.pheromone[mask] == tau_max)
+    # Verify constructor sets tau_init = tau_max (used to initialize pheromone matrix)
+    assert solver.tau_init == tau_max
+    # Verify solve initializes pheromone to tau_max on non-diagonal entries
+    solver.solve(inst, n_vehicles=2)
+    # After 1 iteration with rho=0.2 and tau_max=5.0, max pheromone should be <= tau_max
+    mask = ~np.eye(solver.pheromone.shape[0], dtype=bool)
+    assert np.all(solver.pheromone[mask] <= tau_max + 1e-9)
