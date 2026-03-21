@@ -88,7 +88,6 @@ def run_experiment(config_path: str, results_dir: str = "results") -> None:
 
                         rows.append(rr.to_csv_row())
 
-                        # Save per-run JSON
                         param_hash = hashlib.md5(json.dumps(param_combo, sort_keys=True).encode()).hexdigest()[:8]
                         json_name = f"{instance.name}_{algo_name}_{seed}_{param_hash}.json"
                         json_path = results_path / json_name
