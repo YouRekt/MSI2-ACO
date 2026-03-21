@@ -1,4 +1,3 @@
-# tests/test_solution.py
 from src.solution import Solution
 
 

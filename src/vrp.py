@@ -12,11 +12,11 @@ class VRPInstance:
     n_customers: int
     capacity: int
     depot: int
-    coords: np.ndarray      # shape (n+1, 2)
-    demands: np.ndarray     # shape (n+1,)
-    dist: np.ndarray        # shape (n+1, n+1), Euclidean distances
+    coords: np.ndarray
+    demands: np.ndarray
+    dist: np.ndarray
     best_known: float | None
-    candidates: np.ndarray  # shape (n+1, k), indices of k nearest neighbours
+    candidates: np.ndarray
 
 
 def load_vrp(path: str, k_candidates: int = 20) -> VRPInstance:

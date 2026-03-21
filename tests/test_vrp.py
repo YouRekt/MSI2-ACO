@@ -1,6 +1,5 @@
 import numpy as np
-import pytest
-from src.vrp import load_vrp, VRPInstance
+from src.vrp import load_vrp
 
 
 def test_load_basic_fields(tiny_vrp_file):
