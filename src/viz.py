@@ -7,7 +7,6 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
-import seaborn as sns
 import pandas as pd
 
 
@@ -50,7 +49,7 @@ def plot_boxplots(df: pd.DataFrame, out_path: str) -> None:
     fig, axes = plt.subplots(1, len(instances), figsize=(6 * len(instances), 6), squeeze=False)
     for ax, inst in zip(axes[0], instances):
         sub = df[df["instance"] == inst]
-        sub.boxplot(column="total_dist", by="algorithm", ax=ax)
+        sub.boxplot(column="total_dist", by="algorithm", ax=ax, title="")
         ax.set_title(inst)
         ax.set_xlabel("Algorithm")
         ax.set_ylabel("Total distance")
