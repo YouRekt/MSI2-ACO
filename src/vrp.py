@@ -70,6 +70,9 @@ def load_vrp(path: str, k_candidates: int = 20) -> VRPInstance:
     depot_idx = node_ids.index(depot_id)
     ordered = [node_ids[depot_idx]] + [n for n in node_ids if n != node_ids[depot_idx]]
 
+    if dimension > 0:
+        assert len(ordered) == dimension, f"DIMENSION={dimension} but parsed {len(ordered)} nodes"
+
     n = len(ordered)
     coord_arr = np.array([coords[i] for i in ordered], dtype=float)
     demand_arr = np.array([demands[i] for i in ordered], dtype=float)
