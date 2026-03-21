@@ -1,6 +1,5 @@
 from __future__ import annotations
-import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 
 
 @dataclass
@@ -17,8 +16,8 @@ class RunResult:
     convergence: list[float]
     success_rate: list[float]
     dead_end_ratio: list[float]
-    instance_path: str = ""   # path to .vrp file; used by viz.py to reload coords
-    n_customers: int = 0      # stored for scaling plot (hypothesis 3.2)
+    instance_path: str = ""
+    n_customers: int = 0
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -48,7 +47,7 @@ def iterations_to_delta(convergence: list[float], delta: float = 0.20) -> int | 
         return None
     start = convergence[0]
     for i, val in enumerate(convergence):
-        if val > 0 and (start - val) / val >= delta:
+        if start > 0 and (start - val) / start >= delta:
             return i
     return None
 

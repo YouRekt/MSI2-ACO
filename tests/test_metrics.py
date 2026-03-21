@@ -1,5 +1,3 @@
-# tests/test_metrics.py
-import json
 from src.metrics import RunResult, iterations_to_delta, stagnation_length
 
 
@@ -39,7 +37,7 @@ def test_relative_error_none_when_no_best_known():
 
 
 def test_iterations_to_delta():
-    convergence = [120.0, 100.0, 100.0, 100.0]
+    convergence = [125.0, 100.0, 100.0, 100.0]
     assert iterations_to_delta(convergence, delta=0.20) == 1
 
 
