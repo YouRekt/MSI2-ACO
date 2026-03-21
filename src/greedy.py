@@ -20,7 +20,6 @@ def solve_greedy(
         route_dist = 0.0
 
         while unvisited:
-            # Find nearest feasible unvisited customer
             best_node = -1
             best_dist = float("inf")
             for node in unvisited:
@@ -54,7 +53,6 @@ def solve_greedy(
         if route:
             routes.append(route)
 
-    # Recalculate total_dist cleanly from routes
     total = 0.0
     for route in routes:
         total += instance.dist[instance.depot, route[0]]

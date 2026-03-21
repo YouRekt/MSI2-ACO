@@ -10,27 +10,34 @@ import numpy as np
 import pandas as pd
 
 
-def plot_routes(routes: list[list[int]], coords: np.ndarray, title: str, out_path: str) -> None:
-    """Plot 2D vehicle routes. Depot is node 0."""
+def plot_routes(
+    routes: list[list[int]],
+    coords: np.ndarray,
+    title: str,
+    out_path: str | None = None,
+) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(8, 8))
     colors = cm.tab10.colors
     for i, route in enumerate(routes):
         path = [0] + route + [0]
         xs = [coords[n, 0] for n in path]
         ys = [coords[n, 1] for n in path]
-        color = colors[i % len(colors)]
-        ax.plot(xs, ys, "-o", color=color, markersize=5, label=f"Route {i+1}")
-    # Highlight depot
+        ax.plot(xs, ys, "-o", color=colors[i % len(colors)], markersize=5, label=f"Route {i+1}")
     ax.plot(coords[0, 0], coords[0, 1], "ks", markersize=10, label="Depot")
     ax.set_title(title)
     ax.legend(fontsize=8)
     plt.tight_layout()
-    plt.savefig(out_path, dpi=150)
-    plt.close()
+    if out_path:
+        plt.savefig(out_path, dpi=150)
+        plt.close()
+    return fig
 
 
-def plot_convergence(convergence_by_algo: dict[str, list[float]], title: str, out_path: str) -> None:
-    """Overlay convergence curves for multiple algorithms."""
+def plot_convergence(
+    convergence_by_algo: dict[str, list[float]],
+    title: str,
+    out_path: str | None = None,
+) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(10, 5))
     for algo, curve in convergence_by_algo.items():
         ax.plot(curve, label=algo)
@@ -39,12 +46,13 @@ def plot_convergence(convergence_by_algo: dict[str, list[float]], title: str, ou
     ax.set_title(title)
     ax.legend()
     plt.tight_layout()
-    plt.savefig(out_path, dpi=150)
-    plt.close()
+    if out_path:
+        plt.savefig(out_path, dpi=150)
+        plt.close()
+    return fig
 
 
-def plot_boxplots(df: pd.DataFrame, out_path: str) -> None:
-    """Box plots of total_dist per algorithm x instance."""
+def plot_boxplots(df: pd.DataFrame, out_path: str | None = None) -> plt.Figure:
     instances = df["instance"].unique()
     fig, axes = plt.subplots(1, len(instances), figsize=(6 * len(instances), 6), squeeze=False)
     for ax, inst in zip(axes[0], instances):
@@ -55,19 +63,20 @@ def plot_boxplots(df: pd.DataFrame, out_path: str) -> None:
         ax.set_ylabel("Total distance")
     plt.suptitle("Solution quality distribution across seeds")
     plt.tight_layout()
-    plt.savefig(out_path, dpi=150)
-    plt.close()
+    if out_path:
+        plt.savefig(out_path, dpi=150)
+        plt.close()
+    return fig
 
 
-def plot_scaling(df: pd.DataFrame, out_path: str) -> None:
-    """Mean relative error vs instance size, one line per algorithm."""
+def plot_scaling(df: pd.DataFrame, out_path: str | None = None) -> plt.Figure | None:
     sub = df[df["relative_error"].notna() & df["feasible"]]
     if sub.empty:
         print("No feasible runs with known best solutions found for scaling plot.")
-        return
+        return None
     if "n_customers" not in sub.columns:
         print("'n_customers' column missing from CSV — skipping scaling plot.")
-        return
+        return None
     grouped = sub.groupby(["algorithm", "n_customers"])["relative_error"].mean().reset_index()
     fig, ax = plt.subplots(figsize=(10, 5))
     for algo in grouped["algorithm"].unique():
@@ -78,8 +87,10 @@ def plot_scaling(df: pd.DataFrame, out_path: str) -> None:
     ax.set_title("Scalability: solution quality vs instance size")
     ax.legend()
     plt.tight_layout()
-    plt.savefig(out_path, dpi=150)
-    plt.close()
+    if out_path:
+        plt.savefig(out_path, dpi=150)
+        plt.close()
+    return fig
 
 
 def main():
@@ -96,15 +107,12 @@ def main():
     df["feasible"] = df["feasible"].astype(bool)
     df["relative_error"] = pd.to_numeric(df["relative_error"], errors="coerce")
 
-    # 1. Box plots
     plot_boxplots(df, str(figures_dir / "boxplots.png"))
     print("Saved boxplots.png")
 
-    # 2. Scaling plot
     plot_scaling(df, str(figures_dir / "scaling.png"))
     print("Saved scaling.png")
 
-    # 3. Convergence curves: load from JSON files, group by instance
     json_files = list(results_dir.glob("*.json"))
     convergence_by_instance: dict[str, dict[str, list[float]]] = defaultdict(dict)
     for jf in json_files:
@@ -113,7 +121,6 @@ def main():
         if run.get("convergence"):
             inst = run["instance"]
             algo = run["algorithm"]
-            # Use first seed encountered per algo per instance
             if algo not in convergence_by_instance[inst]:
                 convergence_by_instance[inst][algo] = run["convergence"]
 
@@ -122,7 +129,6 @@ def main():
         plot_convergence(curves, f"Convergence — {inst}", out)
         print(f"Saved convergence_{inst}.png")
 
-    # 4. Route maps: pick best feasible solution per algorithm per instance from JSON
     best_runs: dict[tuple, dict] = {}
     for jf in json_files:
         with open(jf) as f:
@@ -138,9 +144,8 @@ def main():
             continue
         from src.vrp import load_vrp
         vrp_inst = load_vrp(run["instance_path"])
-        coords = vrp_inst.coords
         out = str(figures_dir / f"routes_{inst}_{algo}.png")
-        plot_routes(run["routes"], coords, f"Routes — {algo} — {inst}", out)
+        plot_routes(run["routes"], vrp_inst.coords, f"Routes — {algo} — {inst}", out)
         print(f"Saved routes_{inst}_{algo}.png")
 
 

@@ -65,7 +65,6 @@ def load_vrp(path: str, k_candidates: int = 20) -> VRPInstance:
             if node_id != -1:
                 depot_id = node_id
 
-    # Build 0-indexed arrays (depot becomes index 0)
     node_ids = sorted(coords.keys())
     depot_idx = node_ids.index(depot_id)
     ordered = [node_ids[depot_idx]] + [n for n in node_ids if n != node_ids[depot_idx]]
