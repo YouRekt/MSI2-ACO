@@ -1,7 +1,6 @@
 import json
-import csv
-from pathlib import Path
-from experiments.runner import expand_grid, load_config
+
+from experiments.runner import expand_grid, load_config, _resolve_instance
 
 
 def test_expand_grid_no_lists():
@@ -36,3 +35,21 @@ def test_load_config_s_max_null(tmp_path):
     p.write_text(json.dumps(cfg))
     config = load_config(str(p))
     assert config["s_max"] == [float("inf")]
+
+
+def test_resolve_instance_string():
+    path, n = _resolve_instance("data/foo.vrp", 5)
+    assert path == "data/foo.vrp"
+    assert n == 5
+
+
+def test_resolve_instance_dict_explicit_vehicles():
+    path, n = _resolve_instance({"path": "data/foo.vrp", "n_vehicles": 7}, 5)
+    assert path == "data/foo.vrp"
+    assert n == 7
+
+
+def test_resolve_instance_dict_fallback_vehicles():
+    path, n = _resolve_instance({"path": "data/foo.vrp"}, 5)
+    assert path == "data/foo.vrp"
+    assert n == 5

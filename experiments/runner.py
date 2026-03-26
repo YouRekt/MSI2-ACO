@@ -18,6 +18,12 @@ from src.vrp import load_vrp
 from src.metrics import RunResult
 
 
+def _resolve_instance(entry: str | dict, default_n_vehicles: int) -> tuple[str, int]:
+    if isinstance(entry, str):
+        return entry, default_n_vehicles
+    return entry["path"], entry.get("n_vehicles", default_n_vehicles)
+
+
 def expand_grid(params: dict[str, Any]) -> Iterator[dict[str, Any]]:
     """Expand any list values into a full Cartesian product of configurations."""
     keys = list(params.keys())
@@ -50,7 +56,8 @@ def run_experiment(config_path: str, results_dir: str = "results") -> None:
     s_max_values = config.get("s_max", [float("inf")])
     algorithms = config["algorithms"]
 
-    for instance_path in instances:
+    for inst_entry in instances:
+        instance_path, inst_n_vehicles = _resolve_instance(inst_entry, n_vehicles)
         instance = load_vrp(instance_path)
         for algo_name, algo_params in algorithms.items():
             for param_combo in expand_grid(algo_params):
@@ -61,7 +68,7 @@ def run_experiment(config_path: str, results_dir: str = "results") -> None:
 
                         start = time.time()
                         solution, convergence, success_rate, dead_end_ratio = _run_solver(
-                            algo_name, instance, n_vehicles, s_max, param_combo
+                            algo_name, instance, inst_n_vehicles, s_max, param_combo
                         )
                         elapsed = time.time() - start
 
