@@ -39,7 +39,7 @@ def load_vrp(path: str, k_candidates: int = 20) -> VRPInstance:
             if key == "NAME":
                 name = val
             elif key == "COMMENT":
-                m = re.search(r"Best known[^:]*:\s*([\d.]+)", val, re.IGNORECASE)
+                m = re.search(r"(?:Best known|Optimal value)[^:]*:\s*([\d.]+)", val, re.IGNORECASE)
                 if m:
                     best_known = float(m.group(1))
             elif key == "DIMENSION":
