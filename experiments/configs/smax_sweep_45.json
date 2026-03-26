@@ -1,0 +1,20 @@
+{
+  "instances": [{"path": "data/A/A-n45-k6.vrp", "n_vehicles": 6}],
+  "n_vehicles": 6,
+  "seeds": [42, 123, 456, 789, 1337],
+  "s_max": [null, 300],
+  "algorithms": {
+    "aco": {
+      "n_ants": 20, "n_iterations": 200,
+      "alpha": [0.5, 1.0, 2.0],
+      "beta":  [1.0, 2.0, 5.0],
+      "rho": 0.5, "tau_init": 1.0
+    },
+    "mmas": {
+      "n_ants": 20, "n_iterations": 200,
+      "alpha": [0.5, 1.0, 2.0],
+      "beta":  [1.0, 2.0, 5.0],
+      "rho": 0.2, "tau_min": 0.01, "tau_max": 1.0
+    }
+  }
+}
