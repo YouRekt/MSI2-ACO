@@ -57,7 +57,7 @@ def plot_boxplots(df: pd.DataFrame, out_path: str | None = None) -> plt.Figure:
     fig, axes = plt.subplots(1, len(instances), figsize=(6 * len(instances), 6), squeeze=False)
     for ax, inst in zip(axes[0], instances):
         sub = df[df["instance"] == inst]
-        sub.boxplot(column="total_dist", by="algorithm", ax=ax, title="")
+        sub.boxplot(column="total_dist", by="algorithm", ax=ax)
         ax.set_title(inst)
         ax.set_xlabel("Algorithm")
         ax.set_ylabel("Total distance")
