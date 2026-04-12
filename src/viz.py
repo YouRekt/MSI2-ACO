@@ -15,8 +15,11 @@ def plot_routes(
     coords: np.ndarray,
     title: str,
     out_path: str | None = None,
+    ax: plt.Axes | None = None,
 ) -> plt.Figure:
-    fig, ax = plt.subplots(figsize=(8, 8))
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 8))
     colors = cm.tab10.colors
     for i, route in enumerate(routes):
         path = [0] + route + [0]
@@ -26,11 +29,12 @@ def plot_routes(
     ax.plot(coords[0, 0], coords[0, 1], "ks", markersize=10, label="Depot")
     ax.set_title(title)
     ax.legend(fontsize=8)
-    plt.tight_layout()
-    if out_path:
-        plt.savefig(out_path, dpi=150)
-        plt.close()
-    return fig
+    if fig is not None:
+        plt.tight_layout()
+        if out_path:
+            plt.savefig(out_path, dpi=150)
+            plt.close()
+    return fig or ax.get_figure()
 
 
 def plot_convergence(
@@ -50,6 +54,36 @@ def plot_convergence(
         plt.savefig(out_path, dpi=150)
         plt.close()
     return fig
+
+
+def plot_convergence_derivative(
+    convergence_by_algo: dict[str, list[float]],
+    title: str,
+    window: int = 10,
+    out_path: str | None = None,
+    ax: plt.Axes | None = None,
+) -> plt.Figure:
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 5))
+    for algo, curve in convergence_by_algo.items():
+        improvement = -np.diff(curve)
+        if len(improvement) < window:
+            ax.plot(improvement, label=algo)
+        else:
+            kernel = np.ones(window) / window
+            smoothed = np.convolve(improvement, kernel, mode="valid")
+            ax.plot(range(window - 1, window - 1 + len(smoothed)), smoothed, label=algo)
+    ax.set_xlabel("Iteration")
+    ax.set_ylabel("Improvement per iteration (smoothed)")
+    ax.set_title(title)
+    ax.legend()
+    if fig is not None:
+        plt.tight_layout()
+        if out_path:
+            plt.savefig(out_path, dpi=150)
+            plt.close()
+    return fig or ax.get_figure()
 
 
 def plot_boxplots(df: pd.DataFrame, out_path: str | None = None) -> plt.Figure:
@@ -113,9 +147,8 @@ def main():
     plot_scaling(df, str(figures_dir / "scaling.png"))
     print("Saved scaling.png")
 
-    json_files = list(results_dir.glob("*.json"))
     convergence_by_instance: dict[str, dict[str, list[float]]] = defaultdict(dict)
-    for jf in json_files:
+    for jf in results_dir.glob("*.json"):
         with open(jf) as f:
             run = json.load(f)
         if run.get("convergence"):
@@ -128,25 +161,6 @@ def main():
         out = str(figures_dir / f"convergence_{inst}.png")
         plot_convergence(curves, f"Convergence — {inst}", out)
         print(f"Saved convergence_{inst}.png")
-
-    best_runs: dict[tuple, dict] = {}
-    for jf in json_files:
-        with open(jf) as f:
-            run = json.load(f)
-        if not run.get("feasible") or not run.get("routes"):
-            continue
-        key = (run["instance"], run["algorithm"])
-        if key not in best_runs or run["total_dist"] < best_runs[key]["total_dist"]:
-            best_runs[key] = run
-
-    for (inst, algo), run in best_runs.items():
-        if "instance_path" not in run:
-            continue
-        from src.vrp import load_vrp
-        vrp_inst = load_vrp(run["instance_path"])
-        out = str(figures_dir / f"routes_{inst}_{algo}.png")
-        plot_routes(run["routes"], vrp_inst.coords, f"Routes — {algo} — {inst}", out)
-        print(f"Saved routes_{inst}_{algo}.png")
 
 
 if __name__ == "__main__":

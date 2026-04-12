@@ -80,7 +80,11 @@ def load_vrp(path: str, k_candidates: int = 20) -> VRPInstance:
     dist = np.sqrt((diff ** 2).sum(axis=2))
 
     k = min(k_candidates, n - 1)
-    candidates = np.argsort(dist, axis=1)[:, 1:k + 1]
+    # argpartition is O(n) per row vs O(n log n) for full argsort
+    partitioned = np.argpartition(dist, range(1, k + 1), axis=1)[:, 1:k + 1]
+    row_idx = np.arange(n)[:, None]
+    order = np.argsort(dist[row_idx, partitioned], axis=1)
+    candidates = partitioned[row_idx, order]
 
     return VRPInstance(
         name=name,
@@ -93,3 +97,32 @@ def load_vrp(path: str, k_candidates: int = 20) -> VRPInstance:
         best_known=best_known,
         candidates=candidates,
     )
+
+
+def load_sol(path: str) -> tuple[list[list[int]], float | None]:
+    """Parse a .sol file. Returns (routes, cost).
+
+    Customer IDs in .sol files are 1-based and correspond directly
+    to our reindexed customer indices (depot=0, customers=1..n).
+    """
+    routes: list[list[int]] = []
+    cost: float | None = None
+    for line in Path(path).read_text().splitlines():
+        line = line.strip()
+        if line.upper().startswith("ROUTE"):
+            _, _, nodes_str = line.partition(":")
+            routes.append([int(x) for x in nodes_str.split()])
+        elif line.lower().startswith("cost"):
+            cost = float(line.split()[-1])
+    return routes, cost
+
+
+def resolve_best_known(vrp_path: str, instance: VRPInstance) -> float | None:
+    """Return best_known from instance, falling back to .sol file cost."""
+    if instance.best_known is not None:
+        return instance.best_known
+    sol_path = Path(vrp_path).with_suffix(".sol")
+    if sol_path.exists():
+        _, cost = load_sol(str(sol_path))
+        return cost
+    return None

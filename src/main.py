@@ -1,5 +1,6 @@
 import argparse
 import json
+import pathlib
 import random
 import time
 
@@ -87,7 +88,7 @@ def main():
     elapsed = time.time() - start
 
     relative_error = None
-    if instance.best_known and args.smax == float("inf") and solution.feasible:
+    if instance.best_known is not None and args.smax == float("inf") and solution.feasible:
         relative_error = (solution.total_dist - instance.best_known) / instance.best_known
 
     print(f"Algorithm : {args.algo}")
@@ -112,10 +113,10 @@ def main():
             elapsed_sec=elapsed, feasible=solution.feasible,
             relative_error=relative_error, convergence=convergence,
             success_rate=success_rate, dead_end_ratio=dead_end_ratio,
+            routes=solution.routes,
             instance_path=args.instance_path,
             n_customers=instance.n_customers,
         )
-        import pathlib
         pathlib.Path(args.output_json).parent.mkdir(parents=True, exist_ok=True)
         with open(args.output_json, "w") as f:
             json.dump(rr.to_dict(), f, indent=2)

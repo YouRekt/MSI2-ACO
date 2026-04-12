@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv add:*)",
+      "Bash(uv run:*)",
+      "Bash(bash experiments/run.sh experiments/configs/smax_sweep_32.json results/smax_32)",
+      "Bash(find C:UsersYouRektDesktopProjectsMSI2-ACOresultssmax_32 -name *.json)",
+      "Bash(ls data/A/*.sol)",
+      "Bash(ls data/A/*.vrp)",
+      "Bash(ls data/B/*.vrp)",
+      "Bash(ls data/X/*.vrp)",
+      "Bash(ls data/X/*.sol)",
+      "Bash(ls data/B/*.sol)",
+      "Bash(head -5 /c/Users/YouRekt/Desktop/Projects/MSI2-ACO/data/B/*.vrp)",
+      "Bash(ls /c/Users/YouRekt/Desktop/Projects/MSI2-ACO/data/A/*.sol)",
+      "Bash(ls /c/Users/YouRekt/Desktop/Projects/MSI2-ACO/data/B/*.sol)",
+      "Bash(ls /c/Users/YouRekt/Desktop/Projects/MSI2-ACO/data/X/*.sol)",
+      "Bash(ls /c/Users/YouRekt/Desktop/Projects/MSI2-ACO/data/B/*.vrp)",
+      "Bash(ls /c/Users/YouRekt/Desktop/Projects/MSI2-ACO/data/X/*.vrp)",
+      "Bash(sed 's/\\\\.vrp//')",
+      "Bash(python -c 'print\\(f\"{126/960:.1%}\"\\)')",
+      "Bash(echo \"main:    126/960  = $\\(python -c 'print\\(f\"{126/960:.1%}\"\\)'\\)\")",
+      "Bash(python -c 'print\\(f\"{129/960:.1%}\"\\)')",
+      "Bash(echo \"main_B:  129/960  = $\\(python -c 'print\\(f\"{129/960:.1%}\"\\)'\\)\")",
+      "Bash(python -c 'print\\(f\"{236/800:.1%}\"\\)')",
+      "Bash(python:*)",
+      "Bash(ls results/sweep_X/*.json)"
+    ]
+  }
+}

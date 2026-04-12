@@ -77,6 +77,7 @@ class ACOBase:
         unvisited = list(range(1, instance.n_customers + 1))
         routes: list[list[int]] = []
         dead_ends = 0
+        total_dist = 0.0
 
         for _ in range(n_vehicles):
             if not unvisited:
@@ -120,30 +121,25 @@ class ACOBase:
                 current = chosen
 
             if route:
+                total_dist += route_dist + instance.dist[current, instance.depot]
                 routes.append(route)
 
-        total = 0.0
-        for route in routes:
-            total += instance.dist[instance.depot, route[0]]
-            for i in range(len(route) - 1):
-                total += instance.dist[route[i], route[i+1]]
-            total += instance.dist[route[-1], instance.depot]
-
         feasible = len(unvisited) == 0
-        return Solution(routes=routes, total_dist=total, feasible=feasible), dead_ends
+        return Solution(routes=routes, total_dist=total_dist, feasible=feasible), dead_ends
+
+    def _deposit_on_routes(self, routes: list[list[int]], deposit: float) -> None:
+        for route in routes:
+            nodes = [0] + route + [0]
+            for i in range(len(nodes) - 1):
+                self.pheromone[nodes[i], nodes[i+1]] += deposit
+                self.pheromone[nodes[i+1], nodes[i]] += deposit
 
     def _update_pheromones(
         self,
         solutions: list[Solution],
         best_ever: Solution | None,
     ) -> None:
-        """Basic ACO: all feasible ants deposit 1/total_dist on their edges."""
         for sol in solutions:
             if not sol.feasible:
                 continue
-            deposit = 1.0 / sol.total_dist
-            for route in sol.routes:
-                nodes = [0] + route + [0]
-                for i in range(len(nodes) - 1):
-                    self.pheromone[nodes[i], nodes[i+1]] += deposit
-                    self.pheromone[nodes[i+1], nodes[i]] += deposit
+            self._deposit_on_routes(sol.routes, 1.0 / sol.total_dist)

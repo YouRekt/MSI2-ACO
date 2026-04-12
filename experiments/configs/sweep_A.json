@@ -1,14 +1,24 @@
 {
-  "instances": [{"path": "data/A/A-n32-k5.vrp", "n_vehicles": 5}],
+  "instances": [
+    {"path": "data/A/A-n32-k5.vrp",  "n_vehicles": 5},
+    {"path": "data/A/A-n45-k6.vrp",  "n_vehicles": 6}
+  ],
   "n_vehicles": 5,
   "seeds": [42, 123, 456, 789, 1337],
-  "s_max": [null, 300],
+  "s_max_factors": [1.5, 1.2],
   "algorithms": {
+    "greedy": {},
     "aco": {
       "n_ants": 20, "n_iterations": 200,
       "alpha": [0.5, 1.0, 2.0],
       "beta":  [1.0, 2.0, 5.0],
       "rho": 0.5, "tau_init": 1.0
+    },
+    "eas": {
+      "n_ants": 20, "n_iterations": 200,
+      "alpha": [0.5, 1.0, 2.0],
+      "beta":  [1.0, 2.0, 5.0],
+      "rho": 0.5, "tau_init": 1.0, "e": 20
     },
     "mmas": {
       "n_ants": 20, "n_iterations": 200,

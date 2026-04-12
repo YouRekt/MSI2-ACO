@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 
 
 @dataclass
@@ -16,12 +16,14 @@ class RunResult:
     convergence: list[float]
     success_rate: list[float]
     dead_end_ratio: list[float]
+    routes: list[list[int]] = field(default_factory=list)
     instance_path: str = ""
     n_customers: int = 0
 
     def to_dict(self) -> dict:
         d = asdict(self)
         d["s_max"] = self.s_max if self.s_max != float("inf") else None
+        d["routes"] = [[int(c) for c in route] for route in self.routes]
         return d
 
     def to_csv_row(self) -> dict:

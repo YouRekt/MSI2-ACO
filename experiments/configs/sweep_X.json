@@ -1,0 +1,29 @@
+{
+  "instances": [
+    {"path": "data/X/X-n101-k25.vrp",  "n_vehicles": 25}
+  ],
+  "n_vehicles": 25,
+  "seeds": [42, 123, 456],
+  "s_max_factors": [3.0, 2.0],
+  "algorithms": {
+    "greedy": {},
+    "aco": {
+      "n_ants": 20, "n_iterations": 100,
+      "alpha": [0.5, 1.0, 2.0],
+      "beta":  [1.0, 2.0, 5.0],
+      "rho": 0.5, "tau_init": 1.0
+    },
+    "eas": {
+      "n_ants": 20, "n_iterations": 100,
+      "alpha": [0.5, 1.0, 2.0],
+      "beta":  [1.0, 2.0, 5.0],
+      "rho": 0.5, "tau_init": 1.0, "e": 20
+    },
+    "mmas": {
+      "n_ants": 20, "n_iterations": 100,
+      "alpha": [0.5, 1.0, 2.0],
+      "beta":  [1.0, 2.0, 5.0],
+      "rho": 0.2, "tau_min": 0.01, "tau_max": 1.0
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import numpy as np
-from src.vrp import load_vrp
+from src.vrp import load_vrp, resolve_best_known
 
 
 def test_load_basic_fields(tiny_vrp_file):
@@ -47,3 +47,67 @@ def test_candidates_shape(tiny_vrp_file):
 def test_candidates_are_nearest(tiny_vrp_file):
     inst = load_vrp(tiny_vrp_file, k_candidates=2)
     assert set(inst.candidates[1]).issubset({0, 2, 3})
+
+
+def test_resolve_best_known_from_comment(tiny_vrp_file):
+    inst = load_vrp(tiny_vrp_file)
+    assert resolve_best_known(tiny_vrp_file, inst) == 44.0
+
+
+def test_resolve_best_known_from_sol(tmp_path):
+    vrp_text = """\
+NAME : nocomment
+TYPE : CVRP
+DIMENSION : 4
+EDGE_WEIGHT_TYPE : EUC_2D
+CAPACITY : 50
+NODE_COORD_SECTION
+1 0 0
+2 10 0
+3 10 10
+4 0 10
+DEMAND_SECTION
+1 0
+2 20
+3 20
+4 20
+DEPOT_SECTION
+1
+-1
+EOF
+"""
+    vrp_path = tmp_path / "nocomment.vrp"
+    vrp_path.write_text(vrp_text)
+    sol_path = tmp_path / "nocomment.sol"
+    sol_path.write_text("Route #1: 1 2\nRoute #2: 3\nCost 999\n")
+    inst = load_vrp(str(vrp_path))
+    assert inst.best_known is None
+    assert resolve_best_known(str(vrp_path), inst) == 999.0
+
+
+def test_resolve_best_known_missing(tmp_path):
+    vrp_text = """\
+NAME : nocomment
+TYPE : CVRP
+DIMENSION : 4
+EDGE_WEIGHT_TYPE : EUC_2D
+CAPACITY : 50
+NODE_COORD_SECTION
+1 0 0
+2 10 0
+3 10 10
+4 0 10
+DEMAND_SECTION
+1 0
+2 20
+3 20
+4 20
+DEPOT_SECTION
+1
+-1
+EOF
+"""
+    vrp_path = tmp_path / "nocomment.vrp"
+    vrp_path.write_text(vrp_text)
+    inst = load_vrp(str(vrp_path))
+    assert resolve_best_known(str(vrp_path), inst) is None

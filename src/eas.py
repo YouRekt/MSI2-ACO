@@ -17,9 +17,4 @@ class EAS(ACOBase):
 
         if best_ever is None or not best_ever.feasible:
             return
-        elite_deposit = self.e / best_ever.total_dist
-        for route in best_ever.routes:
-            nodes = [0] + route + [0]
-            for i in range(len(nodes) - 1):
-                self.pheromone[nodes[i], nodes[i+1]] += elite_deposit
-                self.pheromone[nodes[i+1], nodes[i]] += elite_deposit
+        self._deposit_on_routes(best_ever.routes, self.e / best_ever.total_dist)

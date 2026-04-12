@@ -1,5 +1,5 @@
 from __future__ import annotations
-from src.solution import Solution
+from src.solution import Solution, compute_total_dist
 from src.vrp import VRPInstance
 
 
@@ -22,10 +22,10 @@ def solve_greedy(
         while unvisited:
             best_node = -1
             best_dist = float("inf")
+            return_leg = instance.dist[current, instance.depot] if route else 0
             for node in unvisited:
                 new_route_dist = (
-                    route_dist
-                    - (instance.dist[current, instance.depot] if route else 0)
+                    route_dist - return_leg
                     + instance.dist[current, node]
                     + instance.dist[node, instance.depot]
                 )
@@ -40,8 +40,7 @@ def solve_greedy(
                 break
 
             route_dist = (
-                route_dist
-                - (instance.dist[current, instance.depot] if route else 0)
+                route_dist - return_leg
                 + instance.dist[current, best_node]
                 + instance.dist[best_node, instance.depot]
             )
@@ -53,12 +52,9 @@ def solve_greedy(
         if route:
             routes.append(route)
 
-    total = 0.0
-    for route in routes:
-        total += instance.dist[instance.depot, route[0]]
-        for i in range(len(route) - 1):
-            total += instance.dist[route[i], route[i+1]]
-        total += instance.dist[route[-1], instance.depot]
-
     feasible = len(unvisited) == 0
-    return Solution(routes=routes, total_dist=total, feasible=feasible)
+    return Solution(
+        routes=routes,
+        total_dist=compute_total_dist(routes, instance.dist, instance.depot),
+        feasible=feasible,
+    )
