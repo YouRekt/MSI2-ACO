@@ -1,8 +1,8 @@
 {
   "instances": [
-    {"path": "data/X/X-n101-k25.vrp",  "n_vehicles": 25}
+    {"path": "data/X/X-n101-k25.vrp",  "n_vehicles": 28}
   ],
-  "n_vehicles": 25,
+  "n_vehicles": 28,
   "seeds": [42, 123, 456],
   "s_max_factors": [3.0, 2.0],
   "algorithms": {
