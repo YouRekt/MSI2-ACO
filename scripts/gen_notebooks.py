@@ -102,35 +102,108 @@ plt.show()'''
 H33_CODE = r'''json_files = list(MAIN_DIR.glob("*.json"))
 instances = sorted(main["instance"].unique())
 
-for target in instances:
-    curves = {}
-    for jf in json_files:
-        run = json.loads(jf.read_text())
-        if (run["instance"] == target and run["seed"] == 42
-                and run.get("convergence") and run.get("s_max") is None):
-            curves[run["algorithm"]] = run["convergence"]
-
-    aco_curves = {k: v for k, v in curves.items() if k != "greedy"}
-    if not aco_curves:
-        continue
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
-    for algo, curve in aco_curves.items():
-        ax1.plot(curve, label=algo)
-    ax1.set_xlabel("Iteration"); ax1.set_ylabel("Best distance")
-    ax1.set_title(f"{target} — Convergence (seed 42)"); ax1.legend()
-
-    plot_convergence_derivative(aco_curves, f"{target} — Improvement rate", ax=ax2)
-    plt.tight_layout()
-    plt.show()
-
-# Stagnation summary
+# --- Collect all unconstrained ACO-variant runs ---
 from src.metrics import stagnation_length
-records = []
+all_runs = []
 for jf in json_files:
     run = json.loads(jf.read_text())
     if not run.get("convergence") or run["algorithm"] == "greedy" or run.get("s_max") is not None:
         continue
+    all_runs.append(run)
+
+# --- Per-instance side-by-side plots (seed 42) ---
+for target in instances:
+    curves = {}
+    for run in all_runs:
+        if run["instance"] == target and run["seed"] == 42:
+            curves[run["algorithm"]] = run["convergence"]
+    if not curves:
+        continue
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
+    for algo, curve in curves.items():
+        ax1.plot(curve, label=algo)
+    ax1.set_xlabel("Iteration"); ax1.set_ylabel("Best distance")
+    ax1.set_title(f"{target} — Convergence (seed 42)"); ax1.legend()
+
+    plot_convergence_derivative(curves, f"{target} — Improvement rate", ax=ax2)
+    plt.tight_layout()
+    plt.show()
+
+# --- Aggregate convergence across ALL instances and seeds ---
+# Group convergence curves per (algorithm, instance) by normalizing distance to the instance's best_known,
+# then average across instances/seeds for each iteration.
+def align_curves(curves, length):
+    """Pad or truncate each curve to `length`."""
+    out = []
+    for c in curves:
+        if len(c) >= length:
+            out.append(c[:length])
+        else:
+            out.append(list(c) + [c[-1]] * (length - len(c)))
+    return np.array(out)
+
+# Collect per-algorithm curves, normalized by best_known per instance
+best_known_by_inst = dict(zip(main["instance"], main["relative_error"] / main["relative_error"]))  # placeholder
+# Rebuild using actual best_known from the first run per instance
+bk_lookup = {}
+for run in all_runs:
+    inst = run["instance"]
+    td = run["total_dist"]
+    re = main[(main["instance"] == inst) & (main["algorithm"] == run["algorithm"]) & (main["seed"] == run["seed"])]
+    if not re.empty and pd.notna(re.iloc[0]["relative_error"]):
+        bk = td / (1 + re.iloc[0]["relative_error"])
+        bk_lookup[inst] = bk
+
+# Normalize: convergence[t] / best_known -> fraction above optimum
+curves_by_algo = {}
+for run in all_runs:
+    algo = run["algorithm"]
+    inst = run["instance"]
+    if inst not in bk_lookup:
+        continue
+    bk = bk_lookup[inst]
+    norm = [c / bk for c in run["convergence"]]
+    curves_by_algo.setdefault(algo, []).append(norm)
+
+# Plot mean convergence (normalized) and mean improvement rate across instances
+if curves_by_algo:
+    max_len = max(len(c) for curves in curves_by_algo.values() for c in curves)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
+
+    for algo, curves in curves_by_algo.items():
+        arr = align_curves(curves, max_len)
+        mean_curve = arr.mean(axis=0)
+        ax1.plot(mean_curve, label=algo)
+
+    ax1.set_xlabel("Iteration")
+    ax1.set_ylabel("Mean best_dist / best_known")
+    ax1.set_title("Mean convergence (normalized) across all instances & seeds")
+    ax1.axhline(1.0, color="k", linestyle="--", alpha=0.3, label="optimum")
+    ax1.legend()
+
+    # Mean improvement rate (derivative) across instances
+    window = 10
+    for algo, curves in curves_by_algo.items():
+        arr = align_curves(curves, max_len)
+        mean_curve = arr.mean(axis=0)
+        improvement = -np.diff(mean_curve)
+        if len(improvement) >= window:
+            kernel = np.ones(window) / window
+            smoothed = np.convolve(improvement, kernel, mode="valid")
+            ax2.plot(range(window - 1, window - 1 + len(smoothed)), smoothed, label=algo)
+        else:
+            ax2.plot(improvement, label=algo)
+    ax2.set_xlabel("Iteration")
+    ax2.set_ylabel("Mean improvement per iteration (smoothed)")
+    ax2.set_title("Mean improvement rate across all instances & seeds")
+    ax2.legend()
+    plt.tight_layout()
+    plt.show()
+
+# --- Stagnation statistics: mean, min, max per algorithm × instance ---
+records = []
+for run in all_runs:
     records.append({
         "algorithm": run["algorithm"],
         "instance":  run["instance"],
@@ -138,7 +211,16 @@ for jf in json_files:
     })
 if records:
     conv_df = pd.DataFrame(records)
-    display(conv_df.groupby(["algorithm", "instance"])["stagnation"].mean().round(0).unstack())'''
+    print("=== Stagnation per algorithm × instance (mean / min / max across seeds) ===")
+    display(
+        conv_df.groupby(["algorithm", "instance"])["stagnation"]
+        .agg(["mean", "min", "max"]).round(1)
+    )
+    print("\n=== Stagnation summary per algorithm (across all instances × seeds) ===")
+    display(
+        conv_df.groupby("algorithm")["stagnation"]
+        .agg(["mean", "min", "max", "std"]).round(1)
+    )'''
 
 
 H34_CODE = r'''if SWEEP_DIR.exists() and (SWEEP_DIR / "results.csv").exists():
@@ -184,6 +266,69 @@ H34_CODE = r'''if SWEEP_DIR.exists() and (SWEEP_DIR / "results.csv").exists():
                 sr_con.groupby(["algorithm", "alpha", "beta"])
                 [["mean_dead_ends", "mean_success_rate"]].mean().round(3)
             )
+
+        # --- Heatmaps: dead-end ratio and success rate per α × β, per algorithm × S_max ---
+        # Normalization: per-subplot min-max scaling so within-panel α/β patterns are visible.
+        # Text labels show the raw value; color encodes the "distance from best in this panel".
+        sr_algos = sorted([a for a in sr_df["algorithm"].unique() if a != "greedy"])
+        s_max_vals = sorted([s for s in sr_df["s_max"].unique() if pd.notna(s)])
+
+        for metric, cmap, title, better in [
+            ("mean_dead_ends",    "Reds",   "Mean dead-ends per ant (per-panel normalized)", "low"),
+            ("mean_success_rate", "Greens", "Mean success rate (per-panel normalized)",      "high"),
+        ]:
+            n_rows = len(sr_algos)
+            n_cols = len(s_max_vals)
+            if n_rows == 0 or n_cols == 0:
+                continue
+            fig, axes = plt.subplots(n_rows, n_cols,
+                                     figsize=(4 * n_cols, 3.5 * n_rows),
+                                     squeeze=False)
+            for r, algo in enumerate(sr_algos):
+                for c, s_val in enumerate(s_max_vals):
+                    ax = axes[r, c]
+                    sub = sr_df[(sr_df["algorithm"] == algo) & (sr_df["s_max"] == s_val)]
+                    if sub.empty or sub["alpha"].isna().all():
+                        ax.set_title(f"{algo} — S_max={s_val:.0f} (no data)")
+                        ax.axis("off")
+                        continue
+                    pivot = sub.groupby(["alpha", "beta"])[metric].mean().unstack("beta")
+                    pivot = pivot.sort_index(ascending=True)
+                    pivot = pivot[sorted(pivot.columns)]
+                    raw = pivot.values
+
+                    # Per-subplot min-max normalization
+                    vmin, vmax = np.nanmin(raw), np.nanmax(raw)
+                    if vmax - vmin < 1e-9:
+                        norm = np.zeros_like(raw)
+                    else:
+                        norm = (raw - vmin) / (vmax - vmin)
+                    # For "high is better" metrics, invert so brighter = better
+                    display_arr = norm if better == "low" else norm
+
+                    im = ax.imshow(display_arr, aspect="auto", cmap=cmap,
+                                   origin="lower", vmin=0.0, vmax=1.0)
+                    ax.set_xticks(range(len(pivot.columns)))
+                    ax.set_xticklabels([f"{b:g}" for b in pivot.columns])
+                    ax.set_yticks(range(len(pivot.index)))
+                    ax.set_yticklabels([f"{a:g}" for a in pivot.index])
+                    ax.set_xlabel("beta")
+                    ax.set_ylabel("alpha")
+                    ax.set_title(f"{algo} — S_max={s_val:.0f}\n[{vmin:.2f} – {vmax:.2f}]",
+                                 fontsize=10)
+                    for i in range(raw.shape[0]):
+                        for j in range(raw.shape[1]):
+                            v = raw[i, j]
+                            n = display_arr[i, j]
+                            if not np.isnan(v):
+                                ax.text(j, i, f"{n:.2f}", ha="center", va="center",
+                                        color="white" if n > 0.5 else "black", fontsize=9)
+                    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04,
+                                 label="normalized (0=best, 1=worst)" if better == "low"
+                                 else "normalized (0=worst, 1=best)")
+            fig.suptitle(f"{title} — α × β heatmap per algorithm × S_max", fontsize=13, y=1.02)
+            plt.tight_layout()
+            plt.show()
 
     # --- Route comparison at different S_max levels from JSON ---
     best_by_key = {}
@@ -261,9 +406,9 @@ def make_notebook(series, main_dir, sweep_dir, data_dir):
 
 if __name__ == "__main__":
     configs = [
-        ("A", "../results/main",   "../results/sweep_A", "../data/A"),
-        ("B", "../results/main_B", "../results/sweep_B", "../data/B"),
-        ("X", "../results/main_X", "../results/sweep_X", "../data/X"),
+        ("A", "../results/A", "../results/sweep_A", "../data/A"),
+        ("B", "../results/B", "../results/sweep_B", "../data/B"),
+        ("X", "../results/X", "../results/sweep_X", "../data/X"),
     ]
     for series, main_dir, sweep_dir, data_dir in configs:
         nb = make_notebook(series, main_dir, sweep_dir, data_dir)
